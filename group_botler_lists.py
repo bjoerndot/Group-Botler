@@ -95,7 +95,7 @@ def add_list(update, context):
         # add items to list
         for index, line in enumerate(lines, 1):
             new_item = Item(index, list_id, line)
-            items[str(index)] = new_item
+            items[index] = new_item
         new_list.add_items(items)
 
     # check if the list is below the TELEGRAM limit for messages
@@ -223,7 +223,7 @@ def remove_item_from_list(update, context):
     if(not list_id):
         return
 
-    current_list = get_list_from_storage(update.message.chat.id, list_id)
+    current_list = lists[str(list_id)]
     
     item_id = int(extract_item_id(command))
     
