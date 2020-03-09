@@ -79,7 +79,6 @@ def add_list(update, context):
     created_at = datetime.datetime.utcnow().isoformat()
     created_by = ptbu.getUsername(update, True)
     chat_id = update.message.chat.id
-    # TODO: add real mechanism to retrieve the list id
     lists = get_lists_from_storage(chat_id)
     list_id = len(get_lists_from_storage(chat_id))
     while (str(list_id) in lists):
@@ -106,7 +105,14 @@ def add_list(update, context):
         return
 
     # send list to user + retrieve the message_Id
-    message_object = update.message.reply_html(text, quote=False)
+    message_object = update.message.reply_html(text, quote=False)    
+        
+    # finalize new list with last data
+    new_list.add_message_id(message_object.message_id)
+
+    # store list in storage
+    add_list_to_storage(chat_id, new_list)
+
     if(not pin_message(update, context, message_object)):
         is_admin, can_pin, _ = check_bot_rights(update)
         if(not is_admin):
@@ -115,13 +121,6 @@ def add_list(update, context):
             mod_message = "\n\n" + msg.NO_PIN_RIGHTS
         if(not is_admin or not can_pin):
             edit_list_message(context, new_list, new_list.show_list() + mod_message)
-    
-    # finalize new list with last data
-    new_list.add_message_id(message_object.message_id)
-
-    # TEMP: store list in lists to keep track of them
-    # must later be stored in a database with the id as key
-    add_list_to_storage(chat_id, new_list)
 
 
 def extract_list_id(text):
@@ -136,14 +135,20 @@ def is_group(update):
         is_group = True
     return is_group
 
+def is_supergroup(update):
+    is_supergroup = False
+    if(update.message.chat.type == update.message.chat.SUPERGROUP):
+        is_supergroup = True
+    return is_supergroup
+
 def check_bot_rights(update):
-    if(update.message.chat.type == update.message.chat.PRIVATE):
+    chat = update.message.chat
+    if(chat.type == chat.PRIVATE):
         return True, True, True
     is_admin = False
     can_pin = False
     can_delete = False
     # get list of admins
-    chat = update.message.chat
     admins = chat.get_administrators()
     for admin in admins:
         if(admin.user.username == c.OWN_USERNAME):
@@ -152,6 +157,7 @@ def check_bot_rights(update):
             can_delete = admin.can_delete_messages
             break
     return is_admin, can_pin, can_delete
+
 
 def delete_message(update):
     try:
@@ -164,7 +170,7 @@ def pin_message(update, context, message):
     try:
         context.bot.pin_chat_message(chat_id = update.message.chat.id, message_id = message.message_id, disable_notification = True)
         return True
-    except:
+    except BadRequest:
         return False
 
 def has_list_id(command, update, lists):
@@ -175,6 +181,7 @@ def has_list_id(command, update, lists):
         ptbh.reply(update, msg.LIST_ID_UNKNOWN.format(gbc.ALL_LISTS["full"]))
         return False
 
+######### /add_listitem ##########
 def add_item_to_list(update, context):
     lists = get_lists_from_storage(update.message.chat.id)
     command = update.message.text.strip()
@@ -202,19 +209,20 @@ def add_item_to_list(update, context):
         item = Item(id, list_id, ita)
         current_list.add_item(item)
     
-    text = current_list.show_list()
+    text = current_list.show_list(is_group(update))
     if(len(text) > c.MESSAGE_MAX_LENGTH*0.8):
         ptbh.reply(update, msg.ADD_ITEM_LIST_TOO_LONG)
         return
     edit_list_message(context, current_list, text)
     add_list_to_storage(update.message.chat.id, current_list)
     ##### insert LINK to message
-    if(is_group(update)):
+    if(is_supergroupgroup(update)):
         linkable_id = str(update.message.chat.id)[4:] if str(update.message.chat.id).startswith("-100") else update.message.chat.id
         ptbh.reply(update, msg.ITEMS_ADDED_W_LINK.format(linkable_id, current_list.message_id, current_list.title))
     else:
         ptbh.reply(update, msg.ITEMS_ADDED)
 
+########## /del_ ##########
 def remove_item_from_list(update, context):
     # get ids given in the command
     lists = get_lists_from_storage(update.message.chat.id)
@@ -327,7 +335,7 @@ def show_list(update, context):
         return
 
     current_list = lists[str(list_id)]
-    message = update.message.reply_html(current_list.show_list())
+    message = update.message.reply_html(current_list.show_list(is_group(update)))
     current_list.add_message_id(message.message_id)
     add_list_to_storage(chat_id, current_list)
     pin_message(update, context, message)
