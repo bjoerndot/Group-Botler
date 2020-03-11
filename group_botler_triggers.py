@@ -63,16 +63,20 @@ def register_user_in_triggers(chat_id):
         db[str(chat_id)] = {}
 
 def write_trigger_to_DB(update, trigger, key, id):
-    """Adds trigger to shelve and notifies user
+    """Adds trigger to shelve and notifies user - throws an error, if the trigger couldn't be set.
     params: update: Update, trigger: Trigger, key: str, id: int/str"""
     with shelve.open(c.SHELVE_TRIGGERS) as db:
-        data = db[str(id)]
-        data.update({key: trigger})
-        db[str(id)] = data
-        for chat in db:
-            TRIGGER_KEYS[chat] = db[chat].keys()
-    # notify user after successful storing
-    update.message.reply_html(msg.TRIGGER_ADD_SUCCESS.format(key))
+        try:
+            data = db[str(id)]
+            data.update({key: trigger})
+            db[str(id)] = data
+            for chat in db:
+                TRIGGER_KEYS[chat] = db[chat].keys()
+            # notify user after successful storing
+            update.message.reply_html(msg.TRIGGER_ADD_SUCCESS.format(key))
+        except KeyError:
+            if(str(id) not in db):
+                update.message.reply_html(msg.TRIGGER_ERROR_NOT_REGISTERED)
     
 
 def del_trigger_from_DB(update, key, id):
@@ -229,11 +233,9 @@ def del_trigger(update, context):
 def call_trigger(update, context):
     """Is called by every non-command in a chat
     looks, whether a phrase or a word is stored as trigger and retuns that trigger"""
-    print(update)
     chat_id = update.message.chat.id
     trigger_text = update.message.text
     trigger_text = trigger_text.lower()
-    print(trigger_text)
     trigger = fetch_trigger(trigger_text, chat_id)
     # return if nothing is found
     if trigger == "":

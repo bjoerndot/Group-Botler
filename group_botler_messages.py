@@ -145,6 +145,8 @@ TRIGGER_EMPTY = "You don't have any triggers set yet. Use /add_trigger <code>tri
 TRIGGER_NO_REPLY = "You didn't use this command as a reply. Please reply to another message. Otherwise I won't know for sure, which content I shall trigger on that phrase.\n\nRefer to /help if anything is unclear!"
 TRIGGER_NO_ARGS = "I don't know, which phrase I should use, to store this trigger... please call this command with arguments.\n<code>/add_trigger phrase to trigger</code>\n\nRefer to /help for more info."
 
+TRIGGER_ERROR_NOT_REGISTERED = "Unfortunately I was not able to add your trigger. It seems as if you are newly looking for my service.\n\nIf you haven't done yet, please call /start."
+
 # Servcie-Messages
 S_FIRST_USE = "<b>First use detected:</b>\n\n\nChat (ID): <code>{}</code>\nChat (name): <b>{}</b>\nType: {}"
 S_PING = "How can I help you?"
