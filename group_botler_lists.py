@@ -216,7 +216,7 @@ def add_item_to_list(update, context):
     edit_list_message(context, current_list, text)
     add_list_to_storage(update.message.chat.id, current_list)
     ##### insert LINK to message
-    if(is_supergroupgroup(update)):
+    if(is_supergroup(update)):
         linkable_id = str(update.message.chat.id)[4:] if str(update.message.chat.id).startswith("-100") else update.message.chat.id
         ptbh.reply(update, msg.ITEMS_ADDED_W_LINK.format(linkable_id, current_list.message_id, current_list.title))
     else:
