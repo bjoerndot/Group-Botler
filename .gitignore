@@ -1,2 +1,5 @@
 *code-workspace
 group_botler_private.py
+*.json
+__pycache__
+.vscode

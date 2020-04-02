@@ -4,7 +4,7 @@ from telegram import ParseMode
 
 
 # import general libraries
-import datetime, shelve
+import datetime, shelve, json
 
 # import
 import user_management as um
@@ -24,6 +24,8 @@ class Vote:
         self.question = question
         self.answer_options = answer_options
         self.result = result
+
+    ## TODO: add toJSON and fromJSON method
 
 def write_vote_to_DB(id, vote):
     """Write the vote to shevle

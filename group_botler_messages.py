@@ -6,7 +6,12 @@ Let me give you a little taste of my services:
 ⏰ send reminders and 
 💬 set triggers - they are fun 😉
 📄 create lists - shopping, To Do... you name it!
-\nCall /help for an overview!"""
+\nCall /help for an overview!
+
+⚠️⚠️⚠️ IMPORTANT NOTICE: 2020-03-30
+I am very sorry. Some data was lost on a recent error. Unfortunately it is gone forever. I am truly sorry 🙇🏽‍♂️🙇🏽‍♂️🙇🏽‍♂️. A backup module is setup and will - from now on - back up the data once a week. 
+Unfortunately this means, that you have to re-set your triggers manually.
+⚠️⚠️⚠️"""
 
 # Settings
 
@@ -23,6 +28,12 @@ Mylords, myladies.
 📄 create lists - shopping, To Do... you name it!
 \nBelow you can find a couple of buttons. Click them to find out how you can interact with me.
 \nIn your service - 🤵🤵🤵
+
+⚠️⚠️⚠️ IMPORTANT NOTICE: 2020-03-30
+I am very sorry. Some data was lost on a recent error. Unfortunately it is gone forever. I am truly sorry 🙇🏽‍♂️🙇🏽‍♂️🙇🏽‍♂️. A backup module is setup and will - from now on - back up the data once a week. 
+In order to re-register for triggers, please call /start
+Unfortunately this means, that you have to re-set your triggers manually.
+⚠️⚠️⚠️
 """
 H_VOTE = """🗳<b>VOTE</b>
 \nCall non anonymus /vote with at least three arguments: 

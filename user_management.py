@@ -40,9 +40,15 @@ def update_user(update, user):
     user.last_updated = datetime.datetime.utcnow()
     return user
 
-def group_existent(chatId):
+def existent_on_triggers(chat_id):
+    with shelve.open(c.SHELVE_TRIGGERS) as db:
+        flag_triggers = str(chat_id) in list(db.keys())
+    return flag_triggers
+
+def group_existent(chat_id):
     with shelve.open(c.SHELVE_MAIN) as db:
-        flag = str(chatId) in list(db.keys())
+        flag = str(chat_id) in list(db.keys())
+
     return flag
 
 def register_new_user(update, bot):
@@ -50,7 +56,7 @@ def register_new_user(update, bot):
     Also creates new user in triggers
     params: update:Update"""
     user = create_new_user(update)
-    bot.send_message(c.ADMINISTRATION_CHANNEL, msg.S_NEW_REGISTRATION.format(repr(user)), parse_mode = ParseMode.HTML)    
+    bot.send_message(c.ADMINISTRATION_CHANNEL, msg.S_NEW_REGISTRATION.format(str(user)), parse_mode = ParseMode.HTML)    
     triggers.register_user_in_triggers(update.message.chat.id)
     with shelve.open(c.SHELVE_MAIN) as db:
         data = db

@@ -1,4 +1,5 @@
 import dtutil
+import json, datetime
 
 class User:
     def __init__(self, id, chat_type, first_name, last_name, group_name, name_handle, date_of_registration, last_updated, votes = {}, reminders = {}, lists = {}):
@@ -40,3 +41,27 @@ class User:
             self.lists = {}
         finally:
             return self.lists
+
+# TODO: needs to turn all subclasses into json
+    def toJSON(self):
+        def serialize(obj):
+            """JSON serializer for objects not serializable by default json code"""
+            if isinstance(obj, datetime.datetime):
+                serial = obj.isoformat()
+                return serial
+
+            return obj.__dict__
+
+        return json.dumps(self, default=serialize, sort_keys=True, indent=4)  
+    
+    ## needs to build the class object from json 
+    # @classmethod
+    # def fromJSON(cls, obj):
+    #     data = json.loads(obj)
+    #     return cls(
+    #             # data["trigger_text"],
+    #             # data["type"], 
+    #             # data["content"],
+    #             # datetime.datetime.fromisoformat(data["last_use"]),
+    #             # data["num_of_uses"]
+    #         )

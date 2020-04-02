@@ -3,7 +3,7 @@ from telegram.ext.dispatcher import run_async
 from telegram import ParseMode
 
 # import general libraries
-import re, datetime, shelve
+import re, datetime, shelve, json
 
 # import general helper-tools
 import dtutil
@@ -45,6 +45,36 @@ class Trigger:
     
     def print_long(self):
         return f'<b>{self.trigger_text}</b>:\n<code>{self.type}</code> (content-type),\n<code>{self.content}</code> (content),\n<code>{dtutil.getDate(self.type)}</code> (Last use), \n<code>{self.num_of_uses}x (# of uses)</code>'
+
+    def toJSON(self):
+        def serialize(obj):
+            """JSON serializer for objects not serializable by default json code"""
+            if isinstance(obj, datetime.datetime):
+                serial = obj.isoformat()
+                return serial
+
+            return obj.__dict__
+
+        return json.dumps(self, default=serialize, sort_keys=True, indent=4)  
+    
+    @classmethod
+    def fromJSON(cls, obj):
+        data = json.loads(obj)
+        return cls(
+                data["trigger_text"],
+                data["type"], 
+                data["content"],
+                datetime.datetime.fromisoformat(data["last_use"]),
+                data["num_of_uses"]
+            )
+
+
+def reset_triggers(update, context):
+    with shelve.open(c.SHELVE_MAIN) as db_main:
+        ids = list(db_main.keys())
+
+    for i in ids:
+        register_user_in_triggers(i)
 
 def startup_trigger_script():
     """Load triggers into a cached value on startup"""
@@ -148,7 +178,7 @@ def send_trigger_list(update, trigger_list, group_name):
         update.message.reply_html(m, quote=False)
 
 
-def get_trigger_data(id):
+def get_trigger_data(id, context):
     """"Creates a list of Triggers in the shelve
     params: id: str
     returns trigger_list: List of Trigger-Objects"""
@@ -163,7 +193,7 @@ def list_triggers(update, context):
     params: update: Update, context: Context"""
     chat_id = str(update.message.chat.id)
     group_name = ptbu.get_group_title(update)
-    triggers = get_trigger_data(chat_id)
+    triggers = get_trigger_data(chat_id, context)
     send_trigger_list(update, triggers, group_name)
 
 def extract_type_content(message):
@@ -229,7 +259,6 @@ def del_trigger(update, context):
     trigger_text = normalize_trigger_text_from_array(context.args)
     del_trigger_from_DB(update, trigger_text, update.message.chat.id)
 
-@run_async
 def call_trigger(update, context):
     """Is called by every non-command in a chat
     looks, whether a phrase or a word is stored as trigger and retuns that trigger"""
@@ -237,6 +266,9 @@ def call_trigger(update, context):
     trigger_text = update.message.text
     trigger_text = trigger_text.lower()
     trigger = fetch_trigger(trigger_text, chat_id)
+    if (chat_id == c.CREATOR):
+        print(trigger_text)
+        print(trigger)
     # return if nothing is found
     if trigger == "":
         return

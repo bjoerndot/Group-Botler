@@ -23,6 +23,7 @@ import group_botler_reminder as reminder
 import group_botler_triggers as triggers
 import group_botler_votes as votes
 import group_botler_lists as lists
+import group_botler_backup as backup
 
 # import constants and messages
 import group_botler_messages as msg
@@ -51,6 +52,8 @@ def start(update, context):
     chat_id = update.message.chat.id
     if not um.group_existent(chat_id):
         um.register_new_user(update, context.bot)
+    if not um.existent_on_triggers(chat_id):
+        triggers.register_user_in_triggers(chat_id)
 
 @ptdb.creatorOnly
 def show_users(update, context):
@@ -167,6 +170,8 @@ def main():
     dp.add_handler(CommandHandler("question", forward_question))
     dp.add_handler(CommandHandler("feedback", forward_feedback))
     dp.add_handler(MessageHandler(Filters.regex("/answer_"), answer_to_user))
+    dp.add_handler(CommandHandler("backup", backup.manual_backup))
+    dp.add_handler(CommandHandler("restore_backup", backup.restore_backup))
 
     # commands for standard-bot-operations
     dp.add_handler(CommandHandler("start", start))
@@ -193,6 +198,8 @@ def main():
     dp.add_handler(CommandHandler("del_trigger", triggers.del_trigger))
     dp.add_handler(CommandHandler("list_triggers", triggers.list_triggers))
     dp.add_handler(CommandHandler("triggers", triggers.list_triggers))
+    dp.add_handler(CommandHandler("reset_trigger_db", triggers.reset_triggers))
+
 
     # commands for lists
     dp.add_handler(MessageHandler(Filters.regex(gbc.ADD_ITEM_TO_LIST["regex"]), lists.add_item_to_list))
