@@ -1,7 +1,8 @@
 import group_botler_commands as commands
 
+
 class Item:
-    def __init__(self, id, list_id, text, completed = False, completed_by = None):
+    def __init__(self, id, list_id, text, completed=False, completed_by=None):
         self.id = id
         self.list_id = list_id
         self.text = text
@@ -14,8 +15,7 @@ class Item:
     def __setattr__(self, name, value):
         self.__dict__[name] = value
 
-#TODO: change pre to actual icon
-    def show_item(self, is_group = False):
+    def show_item(self, is_group=False):
         if(self.completed):
             if(is_group):
                 return f"- <s>{self.text}</s> {self.completed_by}"
@@ -23,7 +23,6 @@ class Item:
         else:
             return f"- {self.text} {commands.RM_ITEM_FROM_LIST['full'].format(self.list_id, self.id)}"
 
-    
     def set_completed(self, completed_by):
         self.completed = True
         self.completed_by = completed_by

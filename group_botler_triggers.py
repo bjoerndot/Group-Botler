@@ -3,10 +3,14 @@ from telegram.ext.dispatcher import run_async
 from telegram import ParseMode
 
 # import general libraries
-import re, datetime, shelve, json
+import re
+import datetime
+import shelve
+import json
 
 # import general helper-tools
 import dtutil
+import group_botler_decorators as dec
 
 # import telegram-specific helper-tools
 import ptbutil.ptbuser as ptbu
@@ -21,11 +25,12 @@ import group_botler_messages as msg
 import group_botler_constants as c
 
 
-
 # initalizing dictionary for cached access
 TRIGGER_KEYS = {}
 
 ##
+
+
 class Trigger:
     def __init__(self, trigger_text, type, content, last_use, num_of_uses):
         self.trigger_text = trigger_text
@@ -33,7 +38,7 @@ class Trigger:
         self.content = content
         self.last_use = last_use
         self.num_of_uses = num_of_uses
-    
+
     def __repr__(self):
         return f'TRIGGER(Object) ({self.trigger_text}): Type = {self.type}, content-id = {self.content}, Last use = {dtutil.getDateAndTime(self.last_use)}, # of uses = {str(self.num_of_uses)}'
 
@@ -42,7 +47,7 @@ class Trigger:
 
     def print_short(self):
         return self.trigger_text
-    
+
     def print_long(self):
         return f'<b>{self.trigger_text}</b>:\n<code>{self.type}</code> (content-type),\n<code>{self.content}</code> (content),\n<code>{dtutil.getDate(self.type)}</code> (Last use), \n<code>{self.num_of_uses}x (# of uses)</code>'
 
@@ -55,26 +60,19 @@ class Trigger:
 
             return obj.__dict__
 
-        return json.dumps(self, default=serialize, sort_keys=True, indent=4)  
-    
+        return json.dumps(self, default=serialize, sort_keys=True, indent=4)
+
     @classmethod
     def fromJSON(cls, obj):
         data = json.loads(obj)
         return cls(
-                data["trigger_text"],
-                data["type"], 
-                data["content"],
-                datetime.datetime.fromisoformat(data["last_use"]),
-                data["num_of_uses"]
-            )
+            data["trigger_text"],
+            data["type"],
+            data["content"],
+            datetime.datetime.fromisoformat(data["last_use"]),
+            data["num_of_uses"]
+        )
 
-
-def reset_triggers(update, context):
-    with shelve.open(c.SHELVE_MAIN) as db_main:
-        ids = list(db_main.keys())
-
-    for i in ids:
-        register_user_in_triggers(i)
 
 def startup_trigger_script():
     """Load triggers into a cached value on startup"""
@@ -84,6 +82,7 @@ def startup_trigger_script():
             TRIGGER_KEYS[chat] = db[chat].keys()
     return
 
+
 def register_user_in_triggers(chat_id):
     """Add new users to the triggers-shelve
     params: chat_id: int/str as key within the shelve"""
@@ -91,6 +90,8 @@ def register_user_in_triggers(chat_id):
         if str(chat_id) in db:
             return
         db[str(chat_id)] = {}
+    startup_trigger_script()
+
 
 def write_trigger_to_DB(update, trigger, key, id):
     """Adds trigger to shelve and notifies user - throws an error, if the trigger couldn't be set.
@@ -100,6 +101,7 @@ def write_trigger_to_DB(update, trigger, key, id):
             data = db[str(id)]
             data.update({key: trigger})
             db[str(id)] = data
+            global TRIGGER_KEYS
             for chat in db:
                 TRIGGER_KEYS[chat] = db[chat].keys()
             # notify user after successful storing
@@ -107,7 +109,7 @@ def write_trigger_to_DB(update, trigger, key, id):
         except KeyError:
             if(str(id) not in db):
                 update.message.reply_html(msg.TRIGGER_ERROR_NOT_REGISTERED)
-    
+
 
 def del_trigger_from_DB(update, key, id):
     """Deletes trigger from database, if trigger is found
@@ -126,12 +128,21 @@ def del_trigger_from_DB(update, key, id):
             # notifiy user, that the trigger couldn't be found
             update.message.reply_html(msg.TRIGGER_DEL_FAIL.format(key))
 
+
 def fetch_trigger(key, chat_id):
     """Searches for key in the cached dictionary
     Uses fuzzywuzzy to find similar results, updated the Trigger-Instance
     and returns the found trigger."""
     # looking for similiar triggers
-    match = process.extract(key, TRIGGER_KEYS[str(chat_id)], processor=None, scorer=fuzz.ratio, limit=1)
+    if str(chat_id) not in TRIGGER_KEYS:
+        return
+
+    cached_triggers = TRIGGER_KEYS[str(chat_id)]
+    if len(cached_triggers) < 1:
+        return ""
+
+    match = process.extract(key, TRIGGER_KEYS[str(
+        chat_id)], processor=None, scorer=fuzz.ratio, limit=1)
     # if match is higher than 90% = pretty strict/conservative
     if match[0][1] > 90:
         # get the matched word
@@ -149,17 +160,20 @@ def fetch_trigger(key, chat_id):
         # return nothing, if nothing is found.
         return ""
 
+
 def sort_triggers(triggers):
     """Sorts triggers alphabetically by trigger_text
     params: triggers: List of Trigger-Objects
     returns sorted triggers"""
     return sorted(triggers, key=lambda x: x.trigger_text)
 
+
 def write_trigger_item(trigger):
     """Calls built-in print function while writing the list.
     params: trigger: Trigger
     returns str from Trigger-Object"""
     return trigger.print()
+
 
 def send_trigger_list(update, trigger_list, group_name):
     """Sends a couple of messages to the user
@@ -172,9 +186,10 @@ def send_trigger_list(update, trigger_list, group_name):
     # initializing header text here, as group_name needs to be filled but two blanks are required
     header = "<b>Triggers for " + group_name + " - {}-{}</b>\n"
     # getting an array of messages
-    messages = ptbh.split_messages(list_to_split=trigger_list, maximum=c.T_NUM_OF_ITEMS_ON_TRIGGER_LIST, header = header, callback = write_trigger_item)
+    messages = ptbh.split_messages(
+        list_to_split=trigger_list, maximum=c.T_NUM_OF_ITEMS_ON_TRIGGER_LIST, header=header, callback=write_trigger_item)
     for m in messages:
-        m ="\n".join(m)
+        m = "\n".join(m)
         update.message.reply_html(m, quote=False)
 
 
@@ -188,6 +203,7 @@ def get_trigger_data(id, context):
     return trigger_list
 
 
+@dec.is_user_registered
 def list_triggers(update, context):
     """Creates a list of message that display all saved triggers
     params: update: Update, context: Context"""
@@ -196,12 +212,13 @@ def list_triggers(update, context):
     triggers = get_trigger_data(chat_id, context)
     send_trigger_list(update, triggers, group_name)
 
+
 def extract_type_content(message):
     """Unpacks Python-Telegram-Bot-Message-Object into type of content and content id
     params: message: Message
     returns: type: str, content: str"""
     if message.forward_from:
-        type='forward'
+        type = 'forward'
         content = message.message_id
     elif message.audio:
         type = 'audio'
@@ -225,6 +242,7 @@ def extract_type_content(message):
     return type, content
 
 
+@dec.is_user_registered
 def add_trigger(update, context):
     """Is called by /add_trigger args
     Prepares all necessary variables for storage in shelve
@@ -244,6 +262,7 @@ def add_trigger(update, context):
     trigger = Trigger(trigger_text, type, content, last_use, num_of_uses)
     write_trigger_to_DB(update, trigger, trigger_text, chat_id)
 
+
 def normalize_trigger_text_from_array(args):
     """Takes a list of strings joins them and returns them all lower case.
     params: args: List"""
@@ -252,6 +271,7 @@ def normalize_trigger_text_from_array(args):
     return trigger_text
 
 
+@dec.is_user_registered
 def del_trigger(update, context):
     """Is called by /del_trigger args
     Prepares trigger_text and calls for deletion
@@ -259,16 +279,24 @@ def del_trigger(update, context):
     trigger_text = normalize_trigger_text_from_array(context.args)
     del_trigger_from_DB(update, trigger_text, update.message.chat.id)
 
+
+@dec.is_user_registered
 def call_trigger(update, context):
     """Is called by every non-command in a chat
     looks, whether a phrase or a word is stored as trigger and retuns that trigger"""
+
+    # only process updates, if it was issued within the last five minutes
+    # floodgate
+    if (not update or not update.message):
+        return
+
+    if (update.message.date < (datetime.datetime.utcnow() - datetime.timedelta(seconds=60*5))):
+        return
+
     chat_id = update.message.chat.id
     trigger_text = update.message.text
     trigger_text = trigger_text.lower()
     trigger = fetch_trigger(trigger_text, chat_id)
-    if (chat_id == c.CREATOR):
-        print(trigger_text)
-        print(trigger)
     # return if nothing is found
     if trigger == "":
         return
@@ -287,4 +315,4 @@ def call_trigger(update, context):
     elif(trigger.type == 'forward'):
         bot.forward_message(chat_id, chat_id, trigger.content)
     else:
-        bot.send_message(chat_id, trigger.content, parse_mode = ParseMode.HTML)
+        bot.send_message(chat_id, trigger.content, parse_mode=ParseMode.HTML)
