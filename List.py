@@ -1,4 +1,6 @@
 import group_botler_commands as commands
+import datetime
+from Item import Item
 
 class List:
     def __init__(self, id, title, created_by, created_at, chat_id, items = {}, edited_at = None, message_id = None):
@@ -8,7 +10,7 @@ class List:
         self.created_by = created_by
         self.created_at = created_at
         self.edited_at = edited_at
-        self.message_id = message_id,
+        self.message_id = message_id
         self.chat_id = chat_id
 
     def __str__(self):
@@ -56,3 +58,27 @@ class List:
         else:
             num_of_items = len(self.items)
         return num_of_items
+
+    @classmethod
+    def fromDICT(cls, obj):
+        """Reads a data formatted as dictionary and turns it into a List object
+
+        Returns:
+            List: Fully usable List object (with datetime-objects)
+        """
+
+        items = {}
+        for i in obj["items"]:
+            item = Item.fromDICT(obj["items"][i])
+            items[i] = item
+
+        return cls(
+            obj["id"],
+            obj["title"],
+            obj["created_by"],
+            datetime.datetime.fromisoformat(obj["created_at"]),
+            obj["chat_id"],
+            items,
+            datetime.datetime.fromisoformat(obj["edited_at"]) if obj["edited_at"] else None,
+            obj["message_id"]
+        )

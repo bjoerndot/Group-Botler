@@ -290,7 +290,10 @@ def call_trigger(update, context):
     if (not update or not update.message):
         return
 
-    if (update.message.date < (datetime.datetime.utcnow() - datetime.timedelta(seconds=60*5))):
+    tzinfo_message = update.message.date.tzinfo
+    now = datetime.datetime.now(tzinfo_message)
+
+    if (update.message.date < (now - datetime.timedelta(seconds=60*2))):
         return
 
     chat_id = update.message.chat.id

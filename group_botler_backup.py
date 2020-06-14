@@ -3,7 +3,7 @@ import shelve
 import datetime
 from group_botler_triggers import Trigger, startup_trigger_script
 from group_botler_constants import CREATOR
-
+from user import *
 
 def save_to_json(data, db_name):
     with open(db_name + ".json", "w") as outfile:
@@ -38,6 +38,11 @@ def get_data_from_shelve(db_name, groups=None):
                 for e in db[str(key)]:
                     # store data by name as json
                     shelve_data[str(key)][e] = db[str(key)][e].toJSON()
+        # copy all users
+        elif db_name == "users":
+            for key in keys:
+                # create object in emtpty data
+                shelve_data[str(key)]= db[str(key)].toJSON()
     return shelve_data
 
 
@@ -52,13 +57,15 @@ def store_data_in_shelve(data, db_name, groups):
                     if item not in shelve_group:
                         shelve_group[str(item)] = Trigger.fromJSON(
                             data[str(g)][item])
+            elif db_name == "users":
+                shelve_group[str(g)] = User.fromJSON(data[str(g)])
 
             db[str(g)] = shelve_group
 
 
 def backup(bot, groups=None):
     # stored as list to add "reminders" later
-    databases = ["triggers"]
+    databases = ["triggers", "users"]
     for db in databases:
         save_to_json(get_data_from_shelve(db, groups), db)
     bot.send_message(CREATOR, "Backup completed.")

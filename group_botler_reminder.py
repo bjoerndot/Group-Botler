@@ -2,7 +2,7 @@
 from telegram import ParseMode, InlineKeyboardButton, InlineKeyboardMarkup
 
 # import general libraries
-import datetime
+import datetime, json
 import shelve
 import re
 
@@ -56,6 +56,48 @@ class Reminder:
         while start_time < now:
             start_time = start_time + self.interval
         return start_time
+
+    def toJSON(self):
+        """Turns a Reminder object into a json object
+
+        Returns:
+            Json: json representation of a Reminder object
+        """
+        def serialize(obj):
+            """JSON serializer for objects not serializable by default json code"""
+            print('calling serialize')
+            if isinstance(obj, datetime.datetime):
+                serial = obj.isoformat()
+                return serial
+            elif isinstance(obj, datetime.timedelta):
+                print('found timedelate')
+                serial = obj.total_seconds()
+                return serial
+
+            return obj.__dict__
+
+        return json.dumps(self, default=serialize, sort_keys=True, indent=4)
+
+    @classmethod
+    def fromDICT(cls, obj):
+        """Turns data formatted as dictionary into a reminder object
+
+        Returns:
+            Reminder: Full usable reminder-object
+        """
+        if not obj:
+            return
+
+        return cls(
+            obj["name"],
+            datetime.datetime.fromisoformat(obj["end_date"]),
+            obj["callback"],
+            obj["reply_to"],
+            obj["id"],
+            obj["repeating"],
+            obj["text"],
+            datetime.timedelta(seconds=obj["interval"])
+        )
 
 ### Persistent Storage Operations ###
 # reminders are stored by their name

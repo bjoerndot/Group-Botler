@@ -1,5 +1,9 @@
 import dtutil
-import json, datetime
+import json
+import datetime
+from group_botler_votes import Vote
+from group_botler_reminder import Reminder
+from List import List
 
 class User:
     def __init__(self, id, chat_type, first_name, last_name, group_name, name_handle, date_of_registration, last_updated, votes = {}, reminders = {}, lists = {}):
@@ -35,6 +39,11 @@ class User:
         return f'<b>{name}</b> ({self.chat_type}): Reg. since <code>{dtutil.getDate(self.date_of_registration)}</code> | Last updated: <code>{dtutil.getDate(self.last_updated)}</code>'
 
     def get_lists(self):
+        """Gets all lists for this user and checks for existence
+
+        Returns:
+            Dict: Dictionary of List objects
+        """
         try:
             val = self.lists
         except:
@@ -42,26 +51,51 @@ class User:
         finally:
             return self.lists
 
-# TODO: needs to turn all subclasses into json
     def toJSON(self):
+        """Turns an User object into a json
+        """
         def serialize(obj):
             """JSON serializer for objects not serializable by default json code"""
             if isinstance(obj, datetime.datetime):
                 serial = obj.isoformat()
                 return serial
+            elif isinstance(obj, datetime.timedelta):
+                serial = obj.total_seconds()
+                return serial
 
             return obj.__dict__
 
-        return json.dumps(self, default=serialize, sort_keys=True, indent=4)  
-    
-    ## needs to build the class object from json 
-    # @classmethod
-    # def fromJSON(cls, obj):
-    #     data = json.loads(obj)
-    #     return cls(
-    #             # data["trigger_text"],
-    #             # data["type"], 
-    #             # data["content"],
-    #             # datetime.datetime.fromisoformat(data["last_use"]),
-    #             # data["num_of_uses"]
-    #         )
+        return json.dumps(self, default=serialize, sort_keys=True, indent=4)
+
+    @classmethod
+    def fromJSON(cls, obj):
+        """Takes a json-object and turns it into a User"""
+        # Data loaded from json
+        data = json.loads(obj)
+
+        # Each reminder needs to made into a class before it can be used
+        reminders = {}
+        for r in data["reminders"]:
+            rem = Reminder.fromDICT(data["reminders"][r])
+            reminders[r] = rem
+
+        # Each list needs to made into a class before it can be used
+        lists = {}
+        for l in data["lists"]:
+            li = List.fromDICT(data["lists"][l])
+            lists[l] = li
+
+        # Create the user-class
+        return cls(
+            data["id"],
+            data["chat_type"],
+            data["first_name"],
+            data["last_name"],
+            data["group_name"],
+            data["name_handle"],
+            datetime.datetime.fromisoformat(data["date_of_registration"]), # dates are stored as string and must be turned into a datetime
+            datetime.datetime.fromisoformat(data["last_updated"]), # dates are stored as string and must be turned into a datetime
+            Vote.fromJSON(data["votes"]), # Votes must be unpacked before they can be used
+            reminders, # unpacked reminders, see above
+            lists # unpacked lists, see above
+        )

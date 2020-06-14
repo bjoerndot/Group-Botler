@@ -36,7 +36,7 @@ import group_botler_commands as gbc
 from group_botler_private import TOKEN
 
 #import classes
-from user import User
+from user import *
 from job import Job
 
 # VERSION

@@ -28,6 +28,18 @@ class Vote:
         self.answer_options = answer_options
         self.result = result
 
+    @classmethod
+    def fromJSON(cls, obj):
+        if not obj:
+            return
+
+        return cls(
+            datetime.datetime.fromisoformat(obj["date"]),
+            obj["question"],
+            obj["answer_options"],
+            obj["result"],
+        )
+
     # TODO: add toJSON and fromJSON method
 
 

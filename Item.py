@@ -26,3 +26,20 @@ class Item:
     def set_completed(self, completed_by):
         self.completed = True
         self.completed_by = completed_by
+
+    
+    @classmethod
+    def fromDICT(cls, obj):
+        """Turns data formatted as dict into an Item object
+
+        Returns:
+            Item: Fully usable Item object
+        """
+
+        return cls(
+            obj["id"],
+            obj["list_id"],
+            obj["text"],
+            obj["completed"],
+            obj["completed_by"]
+        )
